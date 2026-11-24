@@ -6,10 +6,13 @@ or configuration files.
 """
 
 import json
+import logging
 import os
 from pathlib import Path
 from typing import List
 from pydantic_settings import BaseSettings
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -120,8 +123,12 @@ def get_settings() -> Settings:
         # Production: load from environment variables
         return Settings()
     else:
-        # Development: load from _data/kafka_config.json
-        return Settings.load_from_kafka_config()
+        # Development: load from _data/kafka_config.json when available
+        try:
+            return Settings.load_from_kafka_config()
+        except FileNotFoundError as exc:
+            logger.warning("%s Falling back to environment settings.", exc)
+            return Settings()
 
 
 settings = get_settings()

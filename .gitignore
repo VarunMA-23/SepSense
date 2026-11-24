@@ -1,26 +1,56 @@
 # Local data and credentials
 _data/*
 !_data/.gitkeep
-*.db
-*.pkl
-*.pickle
-*.joblib
-*.pem
-*.key
 .env
 .env.*
+*.pem
+*.key
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Downloaded source data
+mimic-iv-clinical-database-demo-2.2/
 
 # Python
 __pycache__/
 *.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
 .venv/
 venv/
 env/
-*.egg-info/
 build/
 dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
 
-# Node
+# ML artifacts and generated data
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.hdf5
+*.onnx
+*.pt
+*.pth
+ml/data/*.csv
+ml/data/*.parquet
+ml/data/*.db
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+*.local
 frontend/node_modules/
 frontend/dist/
 
@@ -29,5 +59,10 @@ frontend/dist/
 .idea/
 *.swp
 *.swo
+*.sln
+*.ntvs*
+*.njsproj
 .DS_Store
+Thumbs.db
 *.log
+logs/

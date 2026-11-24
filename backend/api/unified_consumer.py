@@ -13,8 +13,8 @@ from typing import List, Set, Dict
 from confluent_kafka import Consumer, KafkaError, KafkaException
 from .config import Settings
 from .models import AdmissionEvent, LabEvent, ICUAdmissionEvent, CharteventEvent, SepsisAlert, ClinicalRecommendation
-from Sepsense.ml.streaming.ml_prediction_module import MLPredictionModule
-from Sepsense.ml.streaming.rag_module import RAGModule
+from ml.streaming.ml_prediction_module import MLPredictionModule
+from ml.streaming.rag_module import RAGModule
 
 logger = logging.getLogger(__name__)
 
@@ -72,9 +72,7 @@ class UnifiedConsumer:
         self.recommendation_sse_queues: Set[asyncio.Queue] = set()
 
         # Initialize ML prediction module (optional - won't break if it fails)
-        # TEMPORARILY DISABLED FOR TESTING
         self.ml_module = None
-        logger.info("🔧 ML module DISABLED for testing")
         try:
             kafka_config = {
                 'bootstrap.servers': settings.kafka_bootstrap_servers,

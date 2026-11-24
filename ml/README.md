@@ -37,6 +37,12 @@ cd Sepsense
 uv sync
 ```
 
+#### 1b. Build the local database (if `_data/mimic_demo.db` is missing)
+Download the MIMIC-IV demo CSVs from Kaggle into the project root, then:
+```bash
+python -m ml.data.build_mimic_db
+```
+
 #### 2. Train Model
 ```bash
 # Train on all admissions (275 from demo DB)

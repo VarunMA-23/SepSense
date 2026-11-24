@@ -15,9 +15,9 @@ from typing import Dict, List, Optional
 from confluent_kafka import Producer
 from google import genai
 
-from Sepsense.rag.embedding_service import GeminiEmbeddingService
-from Sepsense.rag.mongodb_store import MongoDBVectorStore
-from Sepsense.backend.api.models import (
+from rag.embedding_service import GeminiEmbeddingService
+from rag.mongodb_store import MongoDBVectorStore
+from backend.api.models import (
     ClinicalRecommendation,
     SepsisAlertReference,
     RecommendationAction,

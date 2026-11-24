@@ -10,16 +10,18 @@ import joblib
 import logging
 import pandas as pd
 import sqlite3
+import tempfile
 from collections import deque
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional
 from confluent_kafka import Producer
 
-from Sepsense.ml.features.sofa_calculator import SOFACalculator
-from Sepsense.ml.features.comorbidity_service import ComorbidityService
-from Sepsense.ml.streaming.patient_state import PatientStateManager
-from Sepsense.ml.streaming.throttler import PredictionThrottler
-from Sepsense.backend.api.models import (
+from ml.features.sofa_calculator import SOFACalculator
+from ml.features.comorbidity_service import ComorbidityService
+from ml.streaming.patient_state import PatientStateManager
+from ml.streaming.throttler import PredictionThrottler
+from backend.api.models import (
     AdmissionEvent,
     LabEvent,
     CharteventEvent,
@@ -85,7 +87,9 @@ class MLPredictionModule:
             raise
 
         # Initialize services
-        self.state_manager = PatientStateManager(checkpoint_path="/tmp/patient_state.pkl")
+        self.state_manager = PatientStateManager(
+            checkpoint_path=str(Path(tempfile.gettempdir()) / "patient_state.pkl")
+        )
         self.comorbidity_service = ComorbidityService(db_path)
         self.sofa_calculator = SOFACalculator()
         self.throttler = PredictionThrottler(tick_interval=tick_interval)
