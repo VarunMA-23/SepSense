@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sepsense"
+version = "0.1.0"
+description = "Real-time hospital admission monitoring with Confluent Cloud + GCP"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    # Kafka streaming
+    "confluent-kafka>=2.12.1",
+
+    # Data processing
+    "pandas>=2.0.0",
+    "aiosqlite>=0.19.0",  # Async SQLite for async producer
+
+    # Backend API
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "sse-starlette>=2.1.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "python-dotenv>=1.0.0",
+
+    # HTTP client
+    "requests>=2.32.0",
+
+    # GCP dependencies
+    "google-cloud-storage>=2.10.0",
+
+    # ML dependencies
+    "xgboost>=2.0.0",
+    "scikit-learn>=1.4.0",
+    "imbalanced-learn>=0.12.0",
+    "scikit-optimize>=0.9.0",
+    "joblib>=1.3.0",
+    "matplotlib>=3.8.0",
+    "seaborn>=0.13.0",
+    "google-cloud-bigquery>=3.14.0",
+    "pyarrow>=14.0.0",
+
+    # RAG dependencies (MongoDB + Gemini)
+    "google-genai>=0.2.0",  # Modern Gemini SDK (embeddings + generation)
+    "pymongo>=4.6.0",        # MongoDB Atlas client
+    "dnspython>=2.4.0",      # Required for MongoDB SRV connections
+    "pdfplumber>=0.11.0",    # PDF text extraction
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["Sepsense*"]
+
+[tool.uv]
+dev-dependencies = []

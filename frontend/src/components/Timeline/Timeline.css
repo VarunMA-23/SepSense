@@ -1,0 +1,218 @@
+.timeline-container {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft);
+  overflow-x: auto;
+  overflow-y: hidden;
+  position: relative;
+}
+
+.timeline-zoom-controls-external {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.zoom-label-text {
+  margin-right: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.zoom-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 18px;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.zoom-btn:hover:not(:disabled) {
+  background: var(--color-accent-soft);
+  transform: translateY(-1px);
+}
+
+.zoom-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.zoom-label {
+  min-width: 34px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-muted);
+}
+
+.timeline-empty,
+.timeline-loading {
+  padding: 72px 20px;
+  text-align: center;
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.timeline-axis {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background: var(--color-background);
+  border-top: 1px solid var(--color-border);
+  padding: 10px 0;
+  padding-left: 76px;
+}
+
+.timeline-axis svg {
+  overflow: visible;
+}
+
+.axis-group text {
+  font-family: var(--font-sans);
+}
+
+.timeline-rows {
+  max-height: calc(100vh - 340px);
+  min-height: 160px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.timeline-rows::-webkit-scrollbar {
+  width: 8px;
+}
+
+.timeline-rows::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+.timeline-rows::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.timeline-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  position: relative;
+  min-width: fit-content;
+  transition: background-color 0.2s;
+  animation: fade-in 0.3s ease-out;
+}
+
+.timeline-row:hover {
+  background: var(--color-blush);
+}
+
+.timeline-row.icu-patient:hover {
+  background: color-mix(in srgb, var(--color-urgent) 10%, var(--color-surface));
+}
+
+.timeline-patient-label {
+  width: 76px;
+  padding: 8px;
+  text-align: center;
+  border-right: 1px solid var(--color-border);
+  flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  background: var(--color-surface);
+  z-index: 5;
+}
+
+.patient-id {
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.patient-info {
+  font-size: 10px;
+  color: var(--color-muted);
+}
+
+.icu-badge {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: var(--color-emergency);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.timeline-svg {
+  flex: 1;
+}
+
+.timeline-tooltip {
+  position: fixed;
+  max-width: 300px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--color-ink);
+  color: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 200;
+}
+
+.tooltip-title {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-surface) 24%, transparent);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tooltip-item {
+  margin: 4px 0;
+  line-height: 1.5;
+}
+
+.tooltip-item strong {
+  margin-right: 6px;
+  color: var(--color-accent);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .timeline-patient-label {
+    width: 64px;
+    padding: 6px;
+  }
+
+  .patient-id { font-size: 11px; }
+  .patient-info { font-size: 9px; }
+  .timeline-axis { padding-left: 64px; }
+  .timeline-rows { max-height: calc(100vh - 380px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timeline-row {
+    animation: none;
+  }
+}

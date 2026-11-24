@@ -1,0 +1,359 @@
+"""
+Pydantic models for hospital admission and lab events
+
+Models match the JSON schema produced by stream_admissions_coordinated.py and stream_labs.py
+"""
+
+from typing import Optional, List
+from pydantic import BaseModel, computed_field
+
+
+# Reference models (for lab events - minimal data)
+class PatientReference(BaseModel):
+    """Minimal patient reference (used in lab events)"""
+    subject_id: str
+    age: Optional[int] = None  # Add age for RAG filtering
+
+
+class AdmissionReference(BaseModel):
+    """Minimal admission reference (used in lab events)"""
+    hadm_id: Optional[str] = None
+
+
+# Full models (for admission events - complete data)
+class Patient(BaseModel):
+    """Patient demographic information (full)"""
+
+    subject_id: str
+    age: int
+    gender: str
+
+
+class Admission(BaseModel):
+    """Hospital admission details (full)"""
+
+    hadm_id: str
+    type: str
+    location: str
+    insurance: str
+    language: str
+    marital_status: str
+
+
+class Discharge(BaseModel):
+    """Discharge information"""
+
+    time: Optional[str] = None
+    location: Optional[str] = None
+
+
+class AdmissionEvent(BaseModel):
+    """
+    Complete admission event from Kafka
+
+    Matches the JSON structure from stream_admissions_coordinated.py
+    """
+
+    event_type: str
+    event_time: str
+    processing_time: Optional[str] = None
+    patient: Patient
+    admission: Admission
+    discharge: Discharge
+
+    @computed_field
+    @property
+    def is_high_priority(self) -> bool:
+        """
+        Determine if admission is high priority
+
+        Emergency types that require immediate attention:
+        - EMERGENCY
+        - URGENT
+        - EW EMER. (Emergency Ward Emergency)
+        """
+        emergency_types = {"EMERGENCY", "URGENT", "EW EMER."}
+        return self.admission.type in emergency_types
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "event_type": "ADMISSION",
+                "timestamp": "2112-05-28 19:45:00",
+                "patient": {
+                    "subject_id": "10000032",
+                    "age": 52,
+                    "gender": "F"
+                },
+                "admission": {
+                    "hadm_id": "29079034",
+                    "type": "URGENT",
+                    "location": "EMERGENCY ROOM",
+                    "insurance": "Medicare",
+                    "language": "ENGLISH",
+                    "marital_status": "MARRIED"
+                },
+                "discharge": {
+                    "time": "2112-06-05 15:45:00",
+                    "location": "HOME"
+                }
+            }
+        }
+
+
+class LabTest(BaseModel):
+    """Laboratory test details"""
+
+    labevent_id: str
+    specimen_id: Optional[str] = None
+    test_name: str
+    itemid: int
+    value_numeric: Optional[float] = None
+    unit: Optional[str] = None
+    ref_range_lower: Optional[float] = None
+    ref_range_upper: Optional[float] = None
+    flag: Optional[str] = None
+    priority: Optional[str] = None
+    category: Optional[str] = None
+    fluid: Optional[str] = None
+
+
+class LabEvent(BaseModel):
+    """
+    Complete lab event from Kafka
+
+    Matches the JSON structure from stream_labs.py
+    Uses reference models since lab events only contain IDs
+    """
+
+    event_type: str
+    event_time: str
+    store_time: Optional[str] = None
+    processing_time: str
+    patient: PatientReference  # Only subject_id
+    admission: AdmissionReference  # Only hadm_id
+    lab: LabTest
+
+    @computed_field
+    @property
+    def is_abnormal(self) -> bool:
+        """
+        Determine if lab result is abnormal based on flag field
+        """
+        return bool(self.lab.flag and self.lab.flag.upper() == "ABNORMAL")
+
+
+class ICUStay(BaseModel):
+    """ICU stay details"""
+
+    stay_id: str
+    first_careunit: Optional[str] = None
+    last_careunit: Optional[str] = None
+    intime: Optional[str] = None
+    outtime: Optional[str] = None
+    los_days: Optional[float] = None
+    status: Optional[str] = None
+    is_transfer: bool = False
+
+
+class ICUAdmissionEvent(BaseModel):
+    """
+    Complete ICU admission event from Kafka
+
+    Matches the JSON structure for ICU_ADMISSION events
+    """
+
+    event_type: str
+    event_time: str
+    patient: PatientReference
+    admission: AdmissionReference
+    icu_stay: ICUStay
+
+
+class CharteventData(BaseModel):
+    """Chartevent (vital sign) details"""
+
+    itemid: int
+    label: str
+    category: str
+    param_type: str
+    value_text: Optional[str] = None
+    value_numeric: Optional[float] = None
+    unit: Optional[str] = None
+
+
+class CharteventEvent(BaseModel):
+    """
+    Complete chartevent (vital sign) event from Kafka
+
+    Matches the JSON structure for CHARTEVENT events
+    """
+
+    event_type: str
+    event_time: str
+    patient: PatientReference
+    admission: Optional[AdmissionReference] = None  # Added to match producer output
+    icu_stay: ICUStay
+    chartevent: CharteventData
+
+
+class SepsisPrediction(BaseModel):
+    """Sepsis prediction details"""
+
+    sepsis_probability: float
+    risk_level: str  # LOW, MEDIUM, HIGH, CRITICAL
+    model_version: str
+    sofa_score: float
+
+
+class SepsisAlert(BaseModel):
+    """
+    Sepsis alert event from ML prediction service
+
+    Published to sepsis-alerts Kafka topic when prediction >= threshold
+    """
+
+    event_type: str
+    event_time: str
+    patient: PatientReference
+    admission: AdmissionReference
+    prediction: SepsisPrediction
+
+    @computed_field
+    @property
+    def is_critical(self) -> bool:
+        """
+        Determine if alert is critical (requires immediate attention)
+
+        Critical: probability >= 0.7 or risk_level == CRITICAL
+        """
+        return self.prediction.sepsis_probability >= 0.7 or self.prediction.risk_level == "CRITICAL"
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "event_type": "SEPSIS_ALERT",
+                "event_time": "2024-12-27T15:30:00Z",
+                "patient": {"subject_id": "10006701"},
+                "admission": {"hadm_id": "123456"},
+                "prediction": {
+                    "sepsis_probability": 0.72,
+                    "risk_level": "HIGH",
+                    "model_version": "v1",
+                    "sofa_score": 5.0,
+                },
+            }
+        }
+
+
+# ============================================================
+# RAG-Generated Clinical Recommendations
+# ============================================================
+
+
+class RecommendationAction(BaseModel):
+    """Individual clinical action from RAG recommendation"""
+
+    action: str  # e.g., "Obtain blood cultures"
+    priority: str  # IMMEDIATE, URGENT, ROUTINE
+    timing: str  # e.g., "Within 1 hour", "Before antibiotics"
+    rationale: str  # Clinical reasoning
+
+
+class MonitoringProtocol(BaseModel):
+    """Vital signs and labs to monitor"""
+
+    vital_signs: List[str]  # e.g., ["Blood pressure", "Heart rate", "SpO2"]
+    laboratory_tests: List[str]  # e.g., ["Lactate", "Procalcitonin"]
+    frequency: str  # e.g., "Every 2 hours"
+
+
+class EvidenceSource(BaseModel):
+    """Source citation for recommendation"""
+
+    source_file: str  # PDF filename
+    page_number: int
+    section: str  # Section heading
+    relevance_score: float  # 0-1 similarity score
+
+
+class SepsisAlertReference(BaseModel):
+    """Reference to triggering sepsis alert"""
+
+    subject_id: str
+    hadm_id: Optional[str] = None
+    sepsis_probability: float
+    risk_level: str
+    alert_time: str
+
+
+class ClinicalRecommendation(BaseModel):
+    """
+    RAG-generated clinical recommendation for sepsis management
+
+    Published to clinical-recommendations Kafka topic when
+    sepsis alert probability >= threshold (default 0.5)
+    """
+
+    event_type: str = "CLINICAL_RECOMMENDATION"
+    event_time: str
+    recommendation_id: str  # Unique ID for this recommendation
+
+    # Reference to triggering alert
+    sepsis_alert: SepsisAlertReference
+
+    # Generated recommendations
+    immediate_actions: List[RecommendationAction]  # Hour-1 Bundle
+    monitoring: MonitoringProtocol
+    clinical_rationale: str  # Brief explanation
+    evidence_sources: List[EvidenceSource]  # Source citations
+
+    # Metadata
+    model_version: str = "gemini-2.0-flash-001"
+    generation_time_ms: int  # Time to generate
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "event_type": "CLINICAL_RECOMMENDATION",
+                "event_time": "2024-12-27T15:30:05Z",
+                "recommendation_id": "rec_abc123",
+                "sepsis_alert": {
+                    "subject_id": "10006701",
+                    "hadm_id": "123456",
+                    "sepsis_probability": 0.72,
+                    "risk_level": "HIGH",
+                    "alert_time": "2024-12-27T15:30:00Z"
+                },
+                "immediate_actions": [
+                    {
+                        "action": "Obtain blood cultures before antibiotics",
+                        "priority": "IMMEDIATE",
+                        "timing": "Within 1 hour",
+                        "rationale": "Essential for identifying pathogen"
+                    },
+                    {
+                        "action": "Administer broad-spectrum antibiotics",
+                        "priority": "IMMEDIATE",
+                        "timing": "Within 1 hour",
+                        "rationale": "Early antibiotics reduce mortality"
+                    }
+                ],
+                "monitoring": {
+                    "vital_signs": ["Blood pressure", "Heart rate", "SpO2"],
+                    "laboratory_tests": ["Lactate", "Procalcitonin"],
+                    "frequency": "Every 2 hours"
+                },
+                "clinical_rationale": "High sepsis risk requires Hour-1 Bundle per Surviving Sepsis Campaign guidelines",
+                "evidence_sources": [
+                    {
+                        "source_file": "surviving_sepsis_2021.pdf",
+                        "page_number": 12,
+                        "section": "Hour-1 Bundle",
+                        "relevance_score": 0.92
+                    }
+                ],
+                "model_version": "gemini-2.0-flash-001",
+                "generation_time_ms": 2500
+            }
+        }
